@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 56">
+  <defs>
+    <linearGradient id="rig-icon-gradient" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="52">
+      <stop offset="0%" stop-color="#3a5bff"/>
+      <stop offset="100%" stop-color="#b8c5ff"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="8" height="15" fill="#cccdd2"/>
+  <rect x="4" y="21" width="8" height="14" fill="#cccdd2"/>
+  <rect x="4" y="37" width="8" height="15" fill="#cccdd2"/>
+  <rect x="18" y="4" width="8" height="15" fill="url(#rig-icon-gradient)"/>
+  <rect x="18" y="21" width="8" height="14" fill="url(#rig-icon-gradient)"/>
+  <rect x="18" y="37" width="8" height="15" fill="url(#rig-icon-gradient)"/>
+  <rect x="32" y="4" width="8" height="15" fill="#cccdd2"/>
+  <rect x="32" y="21" width="8" height="14" fill="#cccdd2"/>
+  <rect x="32" y="37" width="8" height="15" fill="#cccdd2"/>
+</svg>
