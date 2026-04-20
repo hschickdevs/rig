@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 56" role="img" aria-label="Rig">
+  <defs>
+    <linearGradient id="rig-logo-gradient" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="52">
+      <stop offset="0%" stop-color="#3a5bff"/>
+      <stop offset="100%" stop-color="#b8c5ff"/>
+    </linearGradient>
+  </defs>
+  <!-- Pipe 1 (left, fg color) -->
+  <rect x="4" y="4" width="8" height="15" fill="#cccdd2"/>
+  <rect x="4" y="21" width="8" height="14" fill="#cccdd2"/>
+  <rect x="4" y="37" width="8" height="15" fill="#cccdd2"/>
+  <!-- Pipe 2 (center, gradient) -->
+  <rect x="18" y="4" width="8" height="15" fill="url(#rig-logo-gradient)"/>
+  <rect x="18" y="21" width="8" height="14" fill="url(#rig-logo-gradient)"/>
+  <rect x="18" y="37" width="8" height="15" fill="url(#rig-logo-gradient)"/>
+  <!-- Pipe 3 (right, fg color) -->
+  <rect x="32" y="4" width="8" height="15" fill="#cccdd2"/>
+  <rect x="32" y="21" width="8" height="14" fill="#cccdd2"/>
+  <rect x="32" y="37" width="8" height="15" fill="#cccdd2"/>
+  <!-- Wordmark: "Rig" + blinking cursor "_" -->
+  <g font-family="'JetBrains Mono', ui-monospace, Menlo, monospace" font-size="34" letter-spacing="0">
+    <text x="60" y="40" font-weight="500" fill="#cccdd2">Rig</text>
+    <text x="136" y="40" font-weight="600" fill="#3a5bff">_<animate attributeName="opacity" values="1;0" keyTimes="0;0.5" dur="1.1s" calcMode="discrete" repeatCount="indefinite"/></text>
+  </g>
+</svg>
