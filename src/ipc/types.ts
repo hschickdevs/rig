@@ -14,9 +14,9 @@ export interface AgentDef {
   skip_permissions_args: string[];
   description: string;
   available?: boolean;
-  /** Per-agent override for the stability-check delay (ms) used before auto-sending
-   *  the initial prompt.  Agents with multi-step init dialogs need a longer wait. */
-  prompt_ready_delay_ms?: number;
+  /** When true, the initial prompt is appended as the trailing argv element at spawn,
+   *  and the agent's CLI opens an interactive TUI with that prompt as the first message. */
+  supports_initial_prompt_argv?: boolean;
 }
 
 export interface CreateTaskResult {

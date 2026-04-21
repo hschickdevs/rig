@@ -45,9 +45,8 @@ export interface Task {
   shellAgentIds: string[];
   notes: string;
   lastPrompt: string;
-  initialPrompt?: string; // auto-sends when agent is ready
+  initialPrompt?: string; // injected as trailing argv at spawn
   savedInitialPrompt?: string;
-  prefillPrompt?: string; // fills prompt input without sending
   closingStatus?: 'closing' | 'removing' | 'error';
   closingError?: string;
   gitIsolation: GitIsolationMode;
@@ -127,7 +126,6 @@ export interface PersistedState {
   mergedLinesRemoved?: number;
   terminalFont?: string;
   themePreset?: LookPreset;
-  showPromptInput?: boolean;
   fontSmoothing?: boolean;
   windowState?: PersistedWindowState;
   autoTrustFolders?: boolean;
@@ -194,7 +192,6 @@ export interface AppStore {
   mergedLinesRemoved: number;
   terminalFont: string;
   themePreset: LookPreset;
-  showPromptInput: boolean;
   fontSmoothing: boolean;
   windowState: PersistedWindowState | null;
   autoTrustFolders: boolean;

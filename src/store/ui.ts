@@ -65,10 +65,6 @@ export function setShowPlans(showPlans: boolean): void {
   setStore('showPlans', showPlans);
 }
 
-export function setShowPromptInput(show: boolean): void {
-  setStore('showPromptInput', show);
-}
-
 export function setFontSmoothing(enabled: boolean): void {
   setStore('fontSmoothing', enabled);
 }

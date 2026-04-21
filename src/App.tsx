@@ -31,7 +31,6 @@ import {
   setPendingAction,
   toggleHelpDialog,
   toggleSettingsDialog,
-  sendActivePrompt,
   spawnShellForTask,
   closeShell,
   clearNotification,
@@ -538,13 +537,6 @@ function App() {
         if (id && store.tasks[id]) spawnShellForTask(id);
       },
     });
-    registerShortcut({
-      key: 'Enter',
-      cmdOrCtrl: true,
-      global: true,
-      handler: () => sendActivePrompt(),
-    });
-
     // App shortcuts
     registerShortcut({
       key: 'D',

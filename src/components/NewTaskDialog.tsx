@@ -13,7 +13,6 @@ import {
   updateProject,
   hasDirectTask,
   getGitHubDropDefaults,
-  setPrefillPrompt,
   setDockerAvailable,
   setDockerImage,
   showNotification,
@@ -429,14 +428,20 @@ export function NewTaskDialog(props: NewTaskDialogProps) {
   };
 
   const canSubmit = () => {
-    const hasContent = !!effectiveName();
-    return hasContent && !!selectedProjectId() && !loading();
+    return !!selectedProjectId() && !!selectedAgent() && !loading();
   };
+
+  // Fallback when both the name field and prompt are empty — prompt is optional
+  // per issue #6, so a blank submission generates a timestamped placeholder name.
+  function fallbackTaskName(): string {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `Untitled ${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  }
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
-    const n = effectiveName();
-    if (!n) return;
+    const n = effectiveName() || fallbackTaskName();
 
     const agent = selectedAgent();
     if (!agent) {
@@ -454,7 +459,6 @@ export function NewTaskDialog(props: NewTaskDialogProps) {
     setError('');
 
     const p = prompt().trim() || undefined;
-    const isFromDrop = !!store.newTaskDropUrl;
     const prefix = sanitizeBranchPrefix(branchPrefix());
     const ghUrl = (p ? extractGitHubUrl(p) : null) ?? store.newTaskDropUrl ?? undefined;
     try {
@@ -486,7 +490,7 @@ export function NewTaskDialog(props: NewTaskDialogProps) {
       }
 
       const projDocker = projectDockerfile();
-      const taskId = await createTask({
+      await createTask({
         name: n,
         agentDef: agent,
         projectId,
@@ -494,7 +498,7 @@ export function NewTaskDialog(props: NewTaskDialogProps) {
         baseBranch: baseBranch(),
         symlinkDirs: gitIsolation() === 'worktree' ? [...selectedDirs()] : undefined,
         branchPrefixOverride: gitIsolation() === 'worktree' ? prefix : undefined,
-        initialPrompt: isFromDrop ? undefined : p,
+        initialPrompt: p,
         githubUrl: ghUrl,
         stepsEnabled: stepsEnabled(),
         skipPermissions: agentSupportsSkipPermissions() && skipPermissions(),
@@ -510,10 +514,6 @@ export function NewTaskDialog(props: NewTaskDialogProps) {
           ? (projDocker?.imageTag ?? (store.dockerImage || DEFAULT_DOCKER_IMAGE))
           : undefined,
       });
-      // Drop flow: prefill prompt without auto-sending
-      if (isFromDrop && p) {
-        setPrefillPrompt(taskId, p);
-      }
       toggleNewTaskDialog(false);
     } catch (err) {
       setError(String(err));

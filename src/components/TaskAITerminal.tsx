@@ -1,4 +1,13 @@
-import { Show, For, createSignal, createEffect, onMount, onCleanup } from 'solid-js';
+import {
+  Show,
+  For,
+  createSignal,
+  createEffect,
+  createMemo,
+  onMount,
+  onCleanup,
+  untrack,
+} from 'solid-js';
 
 import {
   store,
@@ -10,6 +19,7 @@ import {
   registerFocusFn,
   unregisterFocusFn,
   setTaskFocusedPanel,
+  clearInitialPrompt,
 } from '../store/store';
 import { InfoBar } from './InfoBar';
 import { TerminalView } from './TerminalView';
@@ -21,12 +31,10 @@ import { getTaskDockerOverlayLabel } from '../lib/docker';
 import { IPC } from '../../electron/ipc/channels';
 import { createHighlightedMarkdown } from '../lib/marked-shiki';
 import type { Task } from '../store/types';
-import type { PromptInputHandle } from './PromptInput';
 
 interface TaskAITerminalProps {
   task: Task;
   isActive: boolean;
-  promptHandle: PromptInputHandle | undefined;
   /** Receives a function that scrolls the AI terminal to the moment a given step
    *  index was recorded, along with the first step index that is jumpable — steps
    *  below that index were written before the current terminal mount and have no
@@ -70,6 +78,32 @@ export function TaskAITerminal(props: TaskAITerminalProps) {
     const ids = props.task.agentIds;
     return ids.length > 0 ? store.agents[ids[0]] : undefined;
   };
+
+  // Snapshot the initial prompt for argv injection on the agent's first spawn.
+  // `untrack` around task.initialPrompt keeps this memo from retracking after we clear
+  // the prompt in the effect below — without it, the args would flicker back to empty
+  // after the first render and re-trigger re-renders.
+  const argvInitialPrompt = createMemo<string | undefined>(() => {
+    const a = firstAgent();
+    if (!a) return undefined;
+    if (a.resumed) return undefined;
+    if (!a.def.supports_initial_prompt_argv) return undefined;
+    if (a.generation !== 0) return undefined;
+    const prompt = untrack(() => props.task.initialPrompt?.trim());
+    return prompt || undefined;
+  });
+
+  // After argv is captured for this agent, clear the pending state so a restart
+  // doesn't re-inject the prompt, and set `lastPrompt` so `sendPrompt`'s steps-guard
+  // (tasks.ts:383) doesn't double-append STEPS_INSTRUCTION on the next user message.
+  createEffect(() => {
+    const p = argvInitialPrompt();
+    if (!p) return;
+    const saved = untrack(() => props.task.savedInitialPrompt ?? p);
+    const taskId = props.task.id;
+    clearInitialPrompt(taskId);
+    setLastPrompt(taskId, saved);
+  });
 
   const fileNameFromPath = (filePath: string) => filePath.split('/').pop() ?? filePath;
 
@@ -124,8 +158,9 @@ export function TaskAITerminal(props: TaskAITerminalProps) {
         <InfoBar
           title={props.task.lastPrompt || infoBarStatus().title}
           onDblClick={() => {
-            if (props.task.lastPrompt && props.promptHandle && !props.promptHandle.getText())
-              props.promptHandle.setText(props.task.lastPrompt);
+            if (props.task.lastPrompt) {
+              void navigator.clipboard.writeText(props.task.lastPrompt).catch(() => {});
+            }
           }}
         >
           <span style={{ opacity: props.task.lastPrompt ? 1 : 0.4 }}>
@@ -218,6 +253,13 @@ export function TaskAITerminal(props: TaskAITerminalProps) {
                       ...(props.task.skipPermissions && a().def.skip_permissions_args?.length
                         ? (a().def.skip_permissions_args ?? [])
                         : []),
+                      // Initial prompt as trailing argv (interactive TUI opens with it
+                      // as the first message). Memoized snapshot so clearing task.initialPrompt
+                      // doesn't cause args to change after PTY spawn.
+                      ...((): string[] => {
+                        const p = argvInitialPrompt();
+                        return p ? [p] : [];
+                      })(),
                     ]}
                     cwd={props.task.worktreePath}
                     stepsEnabled={props.task.stepsEnabled}

@@ -14,7 +14,6 @@ import {
   setThemePreset,
   setAutoTrustFolders,
   setShowPlans,
-  setShowPromptInput,
   setFontSmoothing,
   setDesktopNotificationsEnabled,
   setInactiveColumnOpacity,
@@ -216,33 +215,6 @@ export function SettingsDialog(props: SettingsDialogProps) {
             <span style={{ 'font-size': '14px', color: theme.fg }}>Desktop notifications</span>
             <span style={{ 'font-size': '12px', color: theme.fgSubtle }}>
               Show native notifications when tasks finish or need attention
-            </span>
-          </div>
-        </label>
-        <label
-          style={{
-            display: 'flex',
-            'align-items': 'center',
-            gap: '10px',
-            cursor: 'pointer',
-            padding: '8px 12px',
-            'border-radius': '8px',
-            background: theme.bgInput,
-            border: `1px solid ${theme.border}`,
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={store.showPromptInput}
-            onChange={(e) => setShowPromptInput(e.currentTarget.checked)}
-            style={{ 'accent-color': theme.accent, cursor: 'pointer' }}
-          />
-          <div style={{ display: 'flex', 'flex-direction': 'column', gap: '2px' }}>
-            <span style={{ 'font-size': '14px', color: theme.fg }}>
-              Show prompt input box below terminal
-            </span>
-            <span style={{ 'font-size': '12px', color: theme.fgSubtle }}>
-              When hidden, the terminal occupies the full panel and auto-focuses on activation
             </span>
           </div>
         </label>

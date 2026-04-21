@@ -12,7 +12,9 @@ interface AgentDef {
   skip_permissions_args: string[];
   description: string;
   available?: boolean;
-  prompt_ready_delay_ms?: number;
+  /** When true, the initial prompt is appended as the trailing argv element at spawn,
+   *  and the agent's CLI opens an interactive TUI with that prompt as the first message. */
+  supports_initial_prompt_argv?: boolean;
 }
 
 const DEFAULT_AGENTS: AgentDef[] = [
@@ -24,6 +26,7 @@ const DEFAULT_AGENTS: AgentDef[] = [
     resume_args: ['--continue'],
     skip_permissions_args: ['--dangerously-skip-permissions'],
     description: "Anthropic's Claude Code CLI agent",
+    supports_initial_prompt_argv: true,
   },
   {
     id: 'codex',
@@ -33,6 +36,7 @@ const DEFAULT_AGENTS: AgentDef[] = [
     resume_args: ['resume', '--last'],
     skip_permissions_args: ['--full-auto'],
     description: "OpenAI's Codex CLI agent",
+    supports_initial_prompt_argv: true,
   },
   {
     id: 'gemini',
@@ -42,6 +46,7 @@ const DEFAULT_AGENTS: AgentDef[] = [
     resume_args: ['--resume', 'latest'],
     skip_permissions_args: ['--yolo'],
     description: "Google's Gemini CLI agent",
+    supports_initial_prompt_argv: true,
   },
 ];
 

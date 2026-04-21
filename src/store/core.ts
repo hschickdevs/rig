@@ -38,7 +38,6 @@ export const [store, setStore] = createStore<AppStore>({
   mergedLinesRemoved: 0,
   terminalFont: DEFAULT_TERMINAL_FONT,
   themePreset: 'classic',
-  showPromptInput: true,
   fontSmoothing: true,
   windowState: null,
   autoTrustFolders: false,

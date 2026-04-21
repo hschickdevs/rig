@@ -130,59 +130,6 @@ function looksLikePrompt(line: string): boolean {
 }
 
 /**
- * Patterns for known agent main input prompts (ready for a new task).
- * Tested against the stripped data chunk (not a single line), because TUI
- * apps like Claude Code use cursor positioning instead of newlines.
- */
-const AGENT_READY_TAIL_PATTERNS: RegExp[] = [
-  /❯/, // Claude Code
-  /›/, // Codex CLI
-];
-
-/** Check stripped output for known agent prompt characters.
- *  Only checks the tail of the chunk — the agent's main prompt renders near
- *  the end of the visible content, while TUI selection UIs place ❯ earlier in
- *  the render followed by option text and other choices.
- *  300 chars covers both Claude Code (❯ at the very end) and Ink-based TUI
- *  agents (❯ ~200 chars from end — box border and a footer line appear below). */
-function chunkContainsAgentPrompt(stripped: string): boolean {
-  if (stripped.length === 0) return false;
-  const tail = stripped.slice(-300);
-  return AGENT_READY_TAIL_PATTERNS.some((re) => re.test(tail));
-}
-
-// --- Agent ready event callbacks ---
-// Fired from markAgentOutput when a main prompt is detected in a PTY chunk.
-const agentReadyCallbacks = new Map<string, () => void>();
-
-/** Register a callback that fires once when the agent's main prompt is detected. */
-export function onAgentReady(agentId: string, callback: () => void): void {
-  agentReadyCallbacks.set(agentId, callback);
-}
-
-/** Remove a pending agent-ready callback. */
-export function offAgentReady(agentId: string): void {
-  agentReadyCallbacks.delete(agentId);
-}
-
-/** Fire the one-shot agentReady callback if the tail buffer shows a known agent prompt. */
-function tryFireAgentReadyCallback(agentId: string): void {
-  if (!agentReadyCallbacks.has(agentId)) return;
-  const state = agentStates.get(agentId);
-  const rawTail = state?.outputTailBuffer ?? '';
-  const tailStripped = stripAnsi(rawTail)
-    // eslint-disable-next-line no-control-regex
-    .replace(/[\x00-\x1f\x7f]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (chunkContainsAgentPrompt(tailStripped)) {
-    const cb = agentReadyCallbacks.get(agentId);
-    agentReadyCallbacks.delete(agentId);
-    if (cb) cb();
-  }
-}
-
-/**
  * Normalize terminal output for quiescence comparison.
  * Strips ANSI, removes control characters, collapses whitespace so that
  * cursor repositioning and status bar redraws don't register as changes.
@@ -203,8 +150,7 @@ export function normalizeForComparison(text: string): string {
  * every frame using cursor-positioning escape codes without a screen-clear
  * between frames.  The raw tail buffer therefore grows with each redraw even
  * when the visible content is identical, making `normalizeForComparison(tail)`
- * produce a longer string on every call — which breaks the quiescence snapshot
- * comparison in PromptInput.
+ * produce a longer string on every call.
  *
  * This function finds the last occurrence of a "frame start" marker
  * (cursor-to-row-1 or screen-clear sequence) and normalizes only the content
@@ -564,15 +510,10 @@ function tryAutoTrust(agentId: string, rawTail: string): boolean {
   state.autoTrustTimer = setTimeout(() => {
     state.autoTrustTimer = undefined;
     // Clear stale trust-dialog content (including ❯ selection cursor) so
-    // chunkContainsAgentPrompt only fires on the agent's real prompt.
+    // later tail-based checks don't see the dialog text.
     state.outputTailBuffer = '';
-    // Deregister the agent-ready callback so the fast path (immediate ❯
-    // detection) is disabled.  The agent may render ❯ before it's fully
-    // initialized — the quiescence fallback (1500ms of stable output)
-    // is more reliable after trust acceptance.
-    agentReadyCallbacks.delete(agentId);
-    // Start the settling period — blocks auto-send for POST_AUTO_TRUST_SETTLE_MS
-    // to give slow-starting agents (e.g. Claude Code) time to fully initialize.
+    // Start the settling period — blocks question-based gating for
+    // POST_AUTO_TRUST_SETTLE_MS to let slow-starting agents initialize.
     state.autoTrustAcceptedAt = Date.now();
     invoke(IPC.WriteToAgent, { agentId, data: '\r' }).catch(() => {});
     // Cooldown: ignore trust patterns for 1s so the same dialog
@@ -608,15 +549,6 @@ function analyzeAgentOutput(agentId: string): void {
   }
 
   updateQuestionState(agentId, hasQuestion);
-
-  // Agent-ready prompt scanning. Uses the tail buffer (always current) so
-  // throttled/trailing calls don't miss prompts from intermediate chunks.
-  // Guard: don't fire if the tail buffer contains a question — TUI selection
-  // UIs (e.g. "trust this folder?") also use ❯ as a cursor.
-  // Also skip while auto-trust Enter is scheduled (50ms window) — the ❯ in
-  // the selection UI is a false positive.  After the timer fires, the tail
-  // buffer is cleared so only the agent's real prompt can trigger this.
-  if (!hasQuestion && state.autoTrustTimer === undefined) tryFireAgentReadyCallback(agentId);
 }
 
 /** Call this from the TerminalView Data handler with the raw PTY bytes.
@@ -691,11 +623,6 @@ export function markAgentOutput(agentId: string, data: Uint8Array, taskId?: stri
     const hasQuestion = looksLikeQuestion(state.outputTailBuffer);
     updateQuestionState(agentId, hasQuestion);
 
-    // Fire the agentReady callback (used by PromptInput auto-send).
-    // The chunkContainsAgentPrompt guard inside tryFireAgentReadyCallback
-    // ensures shell prompts ($, %) don't trigger it.
-    tryFireAgentReadyCallback(agentId);
-
     if (state.idleTimer !== undefined) {
       clearTimeout(state.idleTimer);
       state.idleTimer = undefined;
@@ -742,7 +669,6 @@ export function clearAgentActivity(agentId: string): void {
     cancelPendingAnalysis(state);
   }
   agentStates.delete(agentId);
-  agentReadyCallbacks.delete(agentId);
   removeFromActive(agentId);
   updateQuestionState(agentId, false);
 }

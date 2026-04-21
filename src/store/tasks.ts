@@ -383,10 +383,11 @@ export async function sendPrompt(taskId: string, agentId: string, text: string):
   const injectSteps = !!(task?.stepsEnabled && !task?.lastPrompt && !task?.initialPrompt);
   const effectiveText = injectSteps ? `${text}\n\n---\n${STEPS_INSTRUCTION}` : text;
 
-  // Send a Focus In escape sequence before the prompt text.  When the user focuses
-  // the PromptInput textarea, the xterm.js terminal loses DOM focus.  For agents
-  // that enable focus tracking (\x1b[?1004h), xterm.js sends \x1b[O (Focus Out)
-  // to the PTY, which may suspend readline input processing; \x1b[I re-activates it.
+  // Send a Focus In escape sequence before the prompt text.  Programmatic
+  // senders (ReviewProvider, MergeDialog) may run while a dialog has DOM focus,
+  // so the xterm.js terminal has lost focus.  For agents that enable focus
+  // tracking (\x1b[?1004h), xterm.js sent \x1b[O (Focus Out) to the PTY on focus
+  // loss, which can suspend readline input processing; \x1b[I re-activates it.
   await writeToAgentWhenReady(agentId, '\x1b[I');
   // Send text and Enter separately so TUI apps (Claude Code, Codex)
   // don't treat the \r as part of a pasted block
@@ -403,14 +404,6 @@ export function setLastPrompt(taskId: string, text: string): void {
 
 export function clearInitialPrompt(taskId: string): void {
   setStore('tasks', taskId, 'initialPrompt', undefined);
-}
-
-export function clearPrefillPrompt(taskId: string): void {
-  setStore('tasks', taskId, 'prefillPrompt', undefined);
-}
-
-export function setPrefillPrompt(taskId: string, text: string): void {
-  setStore('tasks', taskId, 'prefillPrompt', text);
 }
 
 export function reorderTask(fromIndex: number, toIndex: number): void {

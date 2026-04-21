@@ -6,7 +6,6 @@ import { uncollapseTask } from './tasks';
 
 // Imperative focus registry: components register focus callbacks on mount
 const focusRegistry = new Map<string, () => void>();
-const actionRegistry = new Map<string, () => void>();
 
 export function registerFocusFn(key: string, fn: () => void): void {
   focusRegistry.set(key, fn);
@@ -20,18 +19,6 @@ export function triggerFocus(key: string): void {
   focusRegistry.get(key)?.();
 }
 
-export function registerAction(key: string, fn: () => void): void {
-  actionRegistry.set(key, fn);
-}
-
-export function unregisterAction(key: string): void {
-  actionRegistry.delete(key);
-}
-
-export function triggerAction(key: string): void {
-  actionRegistry.get(key)?.();
-}
-
 // --- Dynamic grid-based spatial navigation ---
 //
 // The grid is built per-task based on its shell count:
@@ -43,7 +30,6 @@ export function triggerAction(key: string): void {
 // row 3: shell:0         shell:1       shell:2   (only if shells exist)
 // row 4: ai-terminal
 // row 5: steps                                    (only if steps enabled)
-// row 6: prompt
 
 function buildGrid(panelId: string): string[][] {
   const task = store.tasks[panelId];
@@ -60,9 +46,6 @@ function buildGrid(panelId: string): string[][] {
     grid.push(['ai-terminal']);
     if (task.stepsEnabled && task.stepsContent?.length) {
       grid.push(['steps']);
-    }
-    if (store.showPromptInput) {
-      grid.push(['prompt']);
     }
     return grid;
   }
@@ -324,10 +307,4 @@ export function toggleHelpDialog(show?: boolean): void {
 
 export function toggleSettingsDialog(show?: boolean): void {
   setStore('showSettingsDialog', show ?? !store.showSettingsDialog);
-}
-
-export function sendActivePrompt(): void {
-  const taskId = store.activeTaskId;
-  if (!taskId) return;
-  triggerAction(`${taskId}:send-prompt`);
 }

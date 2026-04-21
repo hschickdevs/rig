@@ -3,8 +3,6 @@ import {
   store,
   retryCloseTask,
   setActiveTask,
-  clearInitialPrompt,
-  clearPrefillPrompt,
   getProject,
   setTaskFocusedPanel,
   triggerFocus,
@@ -14,7 +12,6 @@ import {
 import { useFocusRegistration } from '../lib/focus-registration';
 import { ResizablePanel, type PanelChild } from './ResizablePanel';
 import type { EditableTextHandle } from './EditableText';
-import { PromptInput, type PromptInputHandle } from './PromptInput';
 import { CloseTaskDialog } from './CloseTaskDialog';
 import { MergeDialog } from './MergeDialog';
 import { PushDialog } from './PushDialog';
@@ -61,9 +58,7 @@ export function TaskPanel(props: TaskPanelProps) {
     { jump: (stepIndex: number) => boolean; firstIndex: number } | undefined
   >();
   let panelRef!: HTMLDivElement;
-  let promptRef: HTMLTextAreaElement | undefined;
   let titleEditHandle: EditableTextHandle | undefined;
-  let promptHandle: PromptInputHandle | undefined;
 
   const editingProject = () => {
     const id = editingProjectId();
@@ -74,7 +69,6 @@ export function TaskPanel(props: TaskPanelProps) {
   onMount(() => {
     const id = props.task.id;
     useFocusRegistration(`${id}:title`, () => titleEditHandle?.startEdit());
-    useFocusRegistration(`${id}:prompt`, () => promptRef?.focus());
   });
 
   // Respond to focus panel changes from store
@@ -86,7 +80,7 @@ export function TaskPanel(props: TaskPanelProps) {
     }
   });
 
-  // Auto-focus prompt when task first becomes active
+  // Auto-focus the AI terminal when task first becomes active
   let autoFocusTimer: ReturnType<typeof setTimeout> | undefined;
   onCleanup(() => {
     if (autoFocusTimer !== undefined) clearTimeout(autoFocusTimer);
@@ -98,12 +92,8 @@ export function TaskPanel(props: TaskPanelProps) {
       autoFocusTimer = setTimeout(() => {
         autoFocusTimer = undefined;
         if (!store.focusedPanel[id] && !panelRef.contains(document.activeElement)) {
-          if (store.showPromptInput) {
-            promptRef?.focus();
-          } else {
-            setTaskFocusedPanel(id, 'ai-terminal');
-            triggerFocus(`${id}:ai-terminal`);
-          }
+          setTaskFocusedPanel(id, 'ai-terminal');
+          triggerFocus(`${id}:ai-terminal`);
         }
       }, 0);
     }
@@ -162,8 +152,6 @@ export function TaskPanel(props: TaskPanelProps) {
       clearInterval(timer);
     });
   });
-
-  const firstAgentId = () => props.task.agentIds[0] ?? '';
 
   function titleBar(): PanelChild {
     return {
@@ -266,40 +254,10 @@ export function TaskPanel(props: TaskPanelProps) {
         <TaskAITerminal
           task={props.task}
           isActive={props.isActive}
-          promptHandle={promptHandle}
           onStepJumpReady={(fn, fromIdx) => {
             setStepNav(fn ? { jump: fn, firstIndex: fromIdx } : undefined);
           }}
         />
-      ),
-    };
-  }
-
-  function promptInput(): PanelChild {
-    return {
-      id: 'prompt',
-      initialSize: 72,
-      stable: true,
-      minSize: 54,
-      maxSize: 300,
-      content: () => (
-        <div
-          onClick={() => setTaskFocusedPanel(props.task.id, 'prompt')}
-          style={{ height: '100%' }}
-        >
-          <PromptInput
-            taskId={props.task.id}
-            agentId={firstAgentId()}
-            initialPrompt={props.task.initialPrompt}
-            prefillPrompt={props.task.prefillPrompt}
-            onSend={() => {
-              if (props.task.initialPrompt) clearInitialPrompt(props.task.id);
-            }}
-            onPrefillConsumed={() => clearPrefillPrompt(props.task.id)}
-            ref={(el) => (promptRef = el)}
-            handle={(h) => (promptHandle = h)}
-          />
-        </div>
       ),
     };
   }
@@ -335,7 +293,6 @@ export function TaskPanel(props: TaskPanelProps) {
           shellSection(),
           aiTerminal(),
           ...(props.task.stepsEnabled ? [stepsSection()] : []),
-          ...(store.showPromptInput ? [promptInput()] : []),
         ]}
       />
       <CloseTaskDialog
