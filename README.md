@@ -2,7 +2,9 @@
   <img src="./brand/rig-logo.svg" alt="Rig" height="56">
 </p>
 
----
+<p align="center">
+  The control surface for parallel coding agents.
+</p>
 
 <p align="center">
   <a href="https://github.com/hschickdevs/rig/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/hschickdevs/rig?style=flat-square&color=4c6fff"></a>
@@ -31,6 +33,21 @@ Electron desktop app serving as an opinionated, terminal integrated session mana
 - `npm run build` — build production Electron app
 - `npm run typecheck` — TypeScript check
 - `npm test` — run vitest
+
+## Contributing
+
+Contributions are welcome. Before opening a PR:
+
+1. Run `npm install`, then confirm `npm run check` and `npm test` pass locally — the pre-commit hook enforces the same gates (TypeScript, ESLint, Prettier, Vitest).
+2. Keep changes scoped: one feature or fix per PR.
+3. Match the existing code style — strict TypeScript (no `any`), Prettier-formatted, `no-console` except `warn`/`error`.
+
+For substantial changes, open an issue first so we can align on scope and direction before you invest time.
+
+Rig is **source-available, not open source** — see [License](#license) below. By submitting a contribution (code, documentation, assets, or otherwise), you agree that:
+
+- Your contribution is licensed under the same [PolyForm Noncommercial 1.0.0](./LICENSE) terms as the rest of the project.
+- The maintainer retains the right to relicense Rig in the future, including offering parallel commercial licenses to for-profit users. Your contribution may be distributed under any such future license without additional notice or compensation.
 
 ## License
 
